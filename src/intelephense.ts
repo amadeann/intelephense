@@ -448,7 +448,8 @@ export interface IntelephenseConfig {
     completionProvider: {
         maxItems: number,
         addUseDeclaration: boolean,
-        backslashPrefix: boolean
+        backslashPrefix: boolean,
+        namespaceSortOrder: string[]
     },
     file: {
         maxSize: number

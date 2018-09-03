@@ -78,13 +78,15 @@ function symbolKindToLspSymbolKind(kind: SymbolKind) {
 export interface CompletionOptions {
     maxItems: number,
     addUseDeclaration: boolean,
-    backslashPrefix: boolean
+    backslashPrefix: boolean,
+    namespaceSortOrder: string[]
 }
 
 const defaultCompletionOptions: CompletionOptions = {
     maxItems: 100,
     addUseDeclaration: true,
-    backslashPrefix: true
+    backslashPrefix: true,
+    namespaceSortOrder: []
 }
 
 const triggerParameterHintsCommand: lsp.Command = {
@@ -371,6 +373,17 @@ abstract class AbstractNameCompletion implements CompletionStrategy {
         }
 
         const symbolNamespace = PhpSymbol.namespace(s.name);
+
+        if (symbolNamespace) {
+            let rootNamespace = symbolNamespace.split('\\')[0];
+            if (this.config.namespaceSortOrder.indexOf(rootNamespace) > -1) {
+                item.sortText = 'aaa' + 'a'.repeat(this.config.namespaceSortOrder.indexOf(rootNamespace));
+            }
+        }
+
+        if (item.sortText == undefined) {
+            item.sortText = s.name;
+        }
 
         if (!isUnqualified) {
             item.label = s.name.slice(fqnOffset);

@@ -349,6 +349,28 @@ namespace Baz;
 \\Foo\\
 `;
 
+var namespaceSortOrder1 =
+`<?php
+namespace Vendor;
+class Foo{}
+
+namespace OtherVendor;
+class Foo{}
+
+namespace OtherApp\\Nested;
+class Foo{}
+
+namespace App;
+class Foo{}
+`;
+
+var namespaceSortOrder2 =
+    `<?php
+namespace Bar;
+
+$foo = new Foo
+`;
+
 function setup(src: string | string[]) {
     let symbolStore = new SymbolStore();
     let parsedDocumentStore = new ParsedDocumentStore();
@@ -754,7 +776,7 @@ describe('CompletionProvider', () => {
 
         it('prefix disabled', function () {
             let completionProvider = setup(prefixSrc);
-            completionProvider.config = { backslashPrefix: false, maxItems: 100, addUseDeclaration: false };
+            completionProvider.config = { backslashPrefix: false, maxItems: 100, addUseDeclaration: false, namespaceSortOrder: [] };
             var completions = completionProvider.provideCompletions('test', { line: 3, character: 3 });
             //console.log(JSON.stringify(completions, null, 4));
             assert.equal(completions.items[0].insertText, 'barFn()');
@@ -824,7 +846,7 @@ describe('CompletionProvider', () => {
 
         it('no additional text edit if disabled', function () {
             let completionProvider = setup([additionalUseDeclSrc1, additionalUseDeclSrc2]);
-            completionProvider.config = { backslashPrefix: true, maxItems: 100, addUseDeclaration: false };
+            completionProvider.config = { backslashPrefix: true, maxItems: 100, addUseDeclaration: false, namespaceSortOrder: [] };
             var completions = completionProvider.provideCompletions('test2', { line: 3, character: 14 });
             //console.log(JSON.stringify(completions, null, 4));
             assert.isUndefined(completions.items[0].additionalTextEdits);
@@ -998,24 +1020,24 @@ describe('CompletionProvider', () => {
     });
 
     describe('class decl body', () => {
-        
+
         it('visibility mod', ()=>{
             let completionProvider = setup(declBodySrc1);
             let expected = <lsp.CompletionItem[]>[
-                    {
-                        label: "public",
-                        kind: 14
-                    },
-                    {
-                        label: "private",
-                        kind: 14
-                    },
-                    {
-                        label: "protected",
-                        kind: 14
-                    }
-                ];
-    
+                {
+                    label: "public",
+                    kind: 14
+                },
+                {
+                    label: "private",
+                    kind: 14
+                },
+                {
+                    label: "protected",
+                    kind: 14
+                }
+            ];
+
             var completions = completionProvider.provideCompletions('test', { line: 2, character: 5 });
             //console.log(JSON.stringify(completions, null, 4));
             assert.deepEqual(completions.items, expected);
@@ -1025,16 +1047,16 @@ describe('CompletionProvider', () => {
         it('f', ()=>{
             let completionProvider = setup(declBodySrc2);
             let expected = <lsp.CompletionItem[]>[
-                    {
-                        label:"final",
-                        kind:14
-                    },
-                    {
-                        label: "function",
-                        kind: 14
-                    }
-                ];
-    
+                {
+                    label:"final",
+                    kind:14
+                },
+                {
+                    label: "function",
+                    kind: 14
+                }
+            ];
+
             var completions = completionProvider.provideCompletions('test', { line: 2, character: 12 });
             //console.log(JSON.stringify(completions, null, 4));
             assert.deepEqual(completions.items, expected);
@@ -1076,15 +1098,15 @@ describe('CompletionProvider', () => {
         });
 
         let expected = <CompletionItem[]>[
-                {
-                    "kind": 7,
-                    "label": "Bar"
-                },
-                {
-                    "kind": 8,
-                    "label": "Baz"
-                }
-            ];
+            {
+                "kind": 7,
+                "label": "Bar"
+            },
+            {
+                "kind": 8,
+                "label": "Baz"
+            }
+        ];
 
         it('completions', function () {
             var completions = completionProvider.provideCompletions('test', { line: 3, character: 17 });
@@ -1114,6 +1136,20 @@ describe('CompletionProvider', () => {
             assert.deepEqual(completions.items, expected);
         });
 
+    });
+
+    describe('namespace sort order', () => {
+        let completionProvider = setup([namespaceSortOrder1, namespaceSortOrder2]);
+
+        completionProvider.config = { backslashPrefix: true, maxItems: 100, addUseDeclaration: true, namespaceSortOrder: ['App', 'OtherApp'] };
+
+        it('completions', function () {
+            var completions = completionProvider.provideCompletions('test2', { line: 3, character: 14 });
+            assert.deepEqual(completions.items[0].sortText, 'Vendor\\Foo');
+            assert.deepEqual(completions.items[1].sortText, 'OtherVendor\\Foo');
+            assert.deepEqual(completions.items[2].sortText, 'aaaa');
+            assert.deepEqual(completions.items[3].sortText, 'aaa');
+        });
     });
 
 });
